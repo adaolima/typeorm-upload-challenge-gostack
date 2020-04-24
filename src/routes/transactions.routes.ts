@@ -47,18 +47,18 @@ transactionsRouter.get('/', async (request, response) => {
 transactionsRouter.post('/', async (request, response) => {
   const { title, value, type, category } = request.body;
   const createTransaction = new CreateTransactionService();
-  const transaction = createTransaction.execute({
+  const transaction = await createTransaction.execute({
     title,
     value,
     type,
     category,
   });
 
-  return response.status(204).json(transaction);
+  return response.status(200).json(transaction);
 });
 
 transactionsRouter.delete('/:id', async (request, response) => {
-  const { id } = request.body;
+  const { id } = request.params;
 
   const deleteTransaction = new DeleteTransactionService();
 
@@ -75,7 +75,7 @@ transactionsRouter.post(
     const fileImported = await importTrasactions.execute({
       csvFilename: request.file.filename,
     });
-    return response.json(fileImported);
+    return response.status(200).json(fileImported);
   },
 );
 
