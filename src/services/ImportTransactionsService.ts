@@ -24,20 +24,26 @@ class ImportTransactionsService {
     const parser = parse({ delimiter: ',' });
     const output: Transaction[] = [];
     parser.on('data', async data => {
-      const { title, type, value, category } = data;
-      const findTransactions = transactionsRepository.findOne(title);
-      if (!findTransactions) {
-        const transaction = await createTransaction.execute({
-          title,
-          value,
-          type,
-          category,
-        });
-        output.push(transaction);
-      }
+      const [title, type, value, category] = data;
+      const transaction = await createTransaction.execute({
+        title,
+        value,
+        type,
+        category,
+      });
+      output.push(transaction);
     });
     loadedCsvDatas.pipe(parser);
-    output.map(item => transactionsRepository.save(item));
+    output.shift();
+
+    output.map(async item => {
+      const findTransactions = await transactionsRepository.findOne({
+        title: item.title,
+      });
+      if (!findTransactions) {
+        await transactionsRepository.save(item);
+      }
+    });
 
     return output;
   }
