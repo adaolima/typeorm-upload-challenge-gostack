@@ -52,6 +52,8 @@ class CreateTransactionService {
       category_id: categoryId,
     });
 
+    await transactionsRepository.save(transaction);
+
     return transaction;
   }
 }
