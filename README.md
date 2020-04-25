@@ -4,14 +4,14 @@
 
 __Course by Rocketseat__
 
-Install dabase trough nodeJS
+Install database trough nodeJS
 
 ```shell
 docker run --name gostack_desafio06 -e POSTGRES_PASSWORD=docker -p 5432:5432 -d postgres
 ```
 
 
-Install dependecies
+Install dependencies
 
 ```shell
 Yarn
