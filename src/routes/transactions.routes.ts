@@ -13,6 +13,13 @@ import ImportTransactionsService from '../services/ImportTransactionsService';
 const transactionsRouter = Router();
 const upload = multer(uploadConfig);
 
+// interface TransactionDTO {
+//   title: string;
+//   type: 'income' | 'outcome';
+//   value: number;
+//   category: Category | string;
+// }
+
 transactionsRouter.get('/', async (request, response) => {
   const transactionsRepository = getCustomRepository(TransactionsRepository);
   // const categoriesRepository = getRepository(Category);

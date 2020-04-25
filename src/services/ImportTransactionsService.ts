@@ -1,18 +1,25 @@
+import path from 'path';
+import fs from 'fs';
+import parse from 'csv-parse';
+
+import uploadConfig from '../config/upload';
+
 import Transaction from '../models/Transaction';
 
+interface Request {
+  csvFilename: string;
+}
+interface TransactionDTO {
+  title: string;
+  type: 'income' | 'outcome';
+  value: number;
+  category: string;
+}
 class ImportTransactionsService {
   public async execute({ csvFilename }: Request): Promise<Transaction[]> {
     // const transactionRepository = getRepository(Transaction);
     const transactionFilePath = path.join(uploadConfig.directory, csvFilename);
-
-    let transacionsData;
-    try {
-      transacionsData = await fs.promises.readFile(transactionFilePath);
-    } catch (err) {
-      console.error(err);
-    } finally {
-      if (transacionsData !== undefined) await transacionsData.close();
-    }
+    const transacionsData = await fs.promises.readFile(transactionFilePath);
     const output: Transaction[] = [];
     const parser = parse({ delimiter: ',' });
 
@@ -30,7 +37,6 @@ class ImportTransactionsService {
     // Catch any error
     parser.on('error', err => {
       console.error(err.message);
-      throw err;
     });
 
     parser.write(transacionsData);
@@ -39,7 +45,6 @@ class ImportTransactionsService {
     output.shift();
 
     console.log('OUT', output);
-    // await fs.promises.unlink(transactionFilePath);
     return output;
   }
 }
