@@ -1,51 +1,87 @@
-import path from 'path';
+import { getCustomRepository, getRepository, In } from 'typeorm';
 import fs from 'fs';
-import parse from 'csv-parse';
-
-import uploadConfig from '../config/upload';
+import csvParse from 'csv-parse';
 
 import Transaction from '../models/Transaction';
+import Category from '../models/Category';
 
-interface Request {
-  csvFilename: string;
-}
+import TransactionsRepository from '../repositories/TransactionsRepository';
+
 interface TransactionDTO {
   title: string;
   type: 'income' | 'outcome';
   value: number;
   category: string;
 }
+
 class ImportTransactionsService {
-  public async execute({ csvFilename }: Request): Promise<Transaction[]> {
-    // const transactionRepository = getRepository(Transaction);
-    const transactionFilePath = path.join(uploadConfig.directory, csvFilename);
-    const transacionsData = await fs.promises.readFile(transactionFilePath);
-    const output: Transaction[] = [];
-    const parser = parse({ delimiter: ',' });
+  public async execute(filePath: string): Promise<Transaction[]> {
+    const transactionsRepository = getCustomRepository(TransactionsRepository);
+    const categoriesRepository = getRepository(Category);
 
-    parser.on('readable', () => {
-      let record;
-      // eslint-disable-next-line no-cond-assign
-      // prettier-ignore
-      while (record = parser.read()) {
-        const [title, type, value, category ] = record;
-        output.push({title, type, value, category,...record});
-      }
+    const contactsReadStream = fs.createReadStream(filePath);
+
+    const parsers = csvParse({ from_line: 2 });
+
+    const parseCSV = contactsReadStream.pipe(parsers);
+
+    const transactions: TransactionDTO[] = [];
+    const categories: string[] = [];
+
+    parseCSV.on('data', async line => {
+      const [title, type, value, category] = line.map((cell: string) =>
+        cell.trim(),
+      );
+
+      if (!title || !type || !value) return;
+
+      categories.push(category);
+      transactions.push({ title, type, value, category });
     });
-    // prettier-enable
 
-    // Catch any error
-    parser.on('error', err => {
-      console.error(err.message);
+    await new Promise(resolve => parseCSV.on('end', resolve));
+
+    const existentCategories = await categoriesRepository.find({
+      where: {
+        title: In(categories),
+      },
     });
 
-    parser.write(transacionsData);
+    const existentCategoriesTitles = existentCategories.map(
+      (category: Category) => category.title,
+    );
 
-    parser.end();
-    output.shift();
+    const addCategoryTitles = categories
+      .filter(category => !existentCategoriesTitles.includes(category))
+      .filter((value, index, self) => self.indexOf(value) === index);
 
-    console.log('OUT', output);
-    return output;
+    console.log(addCategoryTitles);
+    console.log(transactions);
+    const newCategories = categoriesRepository.create(
+      addCategoryTitles.map(title => ({
+        title,
+      })),
+    );
+    await categoriesRepository.save(newCategories);
+
+    const finalCategories = [...newCategories, ...existentCategories];
+
+    const createdTransactions = transactionsRepository.create(
+      transactions.map(transaction => ({
+        title: transaction.title,
+        type: transaction.type,
+        value: transaction.value,
+        category: finalCategories.find(
+          category => category.title === transaction.category,
+        ),
+      })),
+    );
+
+    await transactionsRepository.save(createdTransactions);
+
+    await fs.promises.unlink(filePath);
+
+    return createdTransactions;
   }
 }
 

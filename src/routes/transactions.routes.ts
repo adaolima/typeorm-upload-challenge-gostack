@@ -64,29 +64,10 @@ transactionsRouter.post(
   upload.single('file'),
   async (request, response) => {
     const importTrasactions = new ImportTransactionsService();
-    const fileImported = await importTrasactions.execute({
-      csvFilename: request.file.filename,
-    });
-    try {
-      fileImported.map(async item => {
-        // const transactionDTO = { ...item };
-        const { title, type, value, category } = item;
-        // console.log('ITEM', item);
-        const createTransaction = new CreateTransactionService();
-        const transaction = await createTransaction.execute({
-          title,
-          value,
-          type,
-          category,
-        });
-        return transaction;
-      });
-    } catch (err) {
-      console.log(err);
-    }
-    console.log(fileImported);
+    const transactions = await importTrasactions.execute(request.file.path);
+    console.log(transactions);
 
-    return response.status(200).json(fileImported);
+    return response.status(200).json(transactions);
   },
 );
 
