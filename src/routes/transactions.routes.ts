@@ -61,28 +61,31 @@ transactionsRouter.delete('/:id', async (request, response) => {
 
 transactionsRouter.post(
   '/import',
-  upload.single('csvFile'),
+  upload.single('file'),
   async (request, response) => {
     const importTrasactions = new ImportTransactionsService();
     const fileImported = await importTrasactions.execute({
       csvFilename: request.file.filename,
     });
-
-    fileImported.map(async item => {
-      // const transactionDTO = { ...item };
-      const { title, type, value, category } = item;
-      console.log('ITEM', item);
-      const createTransaction = new CreateTransactionService();
-      const transaction = await createTransaction.execute({
-        title,
-        value,
-        type,
-        category,
+    try {
+      fileImported.map(async item => {
+        // const transactionDTO = { ...item };
+        const { title, type, value, category } = item;
+        // console.log('ITEM', item);
+        const createTransaction = new CreateTransactionService();
+        const transaction = await createTransaction.execute({
+          title,
+          value,
+          type,
+          category,
+        });
+        return transaction;
       });
-      return transaction;
-    });
+    } catch (err) {
+      console.log(err);
+    }
+    console.log(fileImported);
 
-    // return response.status(200).json(transaction);
     return response.status(200).json(fileImported);
   },
 );
