@@ -16,7 +16,7 @@ interface TransactionDTO {
   category: string;
 }
 class ImportTransactionsService {
-  async execute({ csvFilename }: Request): Promise<Transaction[]> {
+  public async execute({ csvFilename }: Request): Promise<Transaction[]> {
     // const transactionRepository = getRepository(Transaction);
     const transactionFilePath = path.join(uploadConfig.directory, csvFilename);
     const transacionsData = await fs.promises.readFile(transactionFilePath);
