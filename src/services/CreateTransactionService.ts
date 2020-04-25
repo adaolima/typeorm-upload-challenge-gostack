@@ -11,7 +11,7 @@ interface Request {
   title: string;
   value: number;
   type: 'income' | 'outcome';
-  category: string;
+  category: string | Category;
 }
 
 class CreateTransactionService {
@@ -39,7 +39,7 @@ class CreateTransactionService {
       categoryId = checkCategoryExists.id;
     } else {
       const categoryCreate = categoriesRepository.create({
-        title: category,
+        title: category as string,
       });
       const categoryNew = await categoriesRepository.save(categoryCreate);
       categoryId = categoryNew.id;

@@ -1,25 +1,31 @@
-import { getRepository, getCustomRepository } from 'typeorm';
+// import { getRepository, getCustomRepository } from 'typeorm';
 import path from 'path';
 import fs from 'fs';
 import parse from 'csv-parse';
-import 'csv-parse/lib/es5';
+// import 'csv-parse/lib/es5';
 
 import uploadConfig from '../config/upload';
 // import AppError from '../errors/AppError';
 
 import Transaction from '../models/Transaction';
-import TransactionsRepository from '../repositories/TransactionsRepository';
+// import TransactionsRepository from '../repositories/TransactionsRepository';
 // import CreateTransactionService from './CreateTransactionService';
 
 interface Request {
   csvFilename: string;
 }
+interface TransactionDTO {
+  title: string;
+  type: 'income' | 'outcome';
+  value: number;
+  category: string;
+}
 class ImportTransactionsService {
   async execute({ csvFilename }: Request): Promise<Transaction[]> {
-    const transactionRepository = getRepository(Transaction);
+    // const transactionRepository = getRepository(Transaction);
     const transactionFilePath = path.join(uploadConfig.directory, csvFilename);
     const transacionsData = fs.readFileSync(transactionFilePath);
-    const output: Array<string> = [];
+    const output: Transaction[] = [];
     const parser = parse({ delimiter: ',' });
 
     parser.on('readable', function () {
@@ -27,47 +33,27 @@ class ImportTransactionsService {
       // eslint-disable-next-line no-cond-assign
       // prettier-ignore
       while (record = parser.read()) {
-        output.push(record);
-        console.log(record);
+        const [title, type, value, category ] = record;
+        output.push({title, type, value, category,...record});
       }
     });
+    // prettier-enable
+
     // Catch any error
-    parser.on('error', function (err) {
+    parser.on('error', err => {
       console.error(err.message);
     });
 
     // parser.on('end', function () {
     //   console.log(output);
     // });
-
-    console.log(output);
-
     parser.write(transacionsData);
 
     parser.end();
-    // prettier-enable
-    // const transactions = transacionsData.pipe(parser);
+    output.shift();
 
-    // const parser = parse({ delimiter: ',' }, function (err, data) {
-    //   return data;
-    // data.map((item: Transaction, index: number) => {
-
-    //   if (index !== 0) {
-    //     // const { title, type, value, category } = item;
-    //     // const transaction = await transactionRepository.create({
-    //     //   title,
-    //     //   type,
-    //     //   value,
-    //     //   category,
-    //     // });
-    //     // transactionRepository.save(transaction);
-    //     // output.push(item);
-    //   }
-    // });
-    // });
-    // const transactions = transacionsData.pipe(parser);
-
-    // console.log(transactions);
+    console.log('OUT', output);
+    return output;
   }
 }
 
