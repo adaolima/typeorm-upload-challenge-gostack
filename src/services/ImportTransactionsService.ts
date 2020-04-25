@@ -1,15 +1,10 @@
-// import { getRepository, getCustomRepository } from 'typeorm';
 import path from 'path';
 import fs from 'fs';
 import parse from 'csv-parse';
-// import 'csv-parse/lib/es5';
 
 import uploadConfig from '../config/upload';
-// import AppError from '../errors/AppError';
 
 import Transaction from '../models/Transaction';
-// import TransactionsRepository from '../repositories/TransactionsRepository';
-// import CreateTransactionService from './CreateTransactionService';
 
 interface Request {
   csvFilename: string;
@@ -24,11 +19,11 @@ class ImportTransactionsService {
   async execute({ csvFilename }: Request): Promise<Transaction[]> {
     // const transactionRepository = getRepository(Transaction);
     const transactionFilePath = path.join(uploadConfig.directory, csvFilename);
-    const transacionsData = fs.readFileSync(transactionFilePath);
+    const transacionsData = await fs.promises.readFile(transactionFilePath);
     const output: Transaction[] = [];
     const parser = parse({ delimiter: ',' });
 
-    parser.on('readable', function () {
+    parser.on('readable', () => {
       let record;
       // eslint-disable-next-line no-cond-assign
       // prettier-ignore
@@ -44,9 +39,6 @@ class ImportTransactionsService {
       console.error(err.message);
     });
 
-    // parser.on('end', function () {
-    //   console.log(output);
-    // });
     parser.write(transacionsData);
 
     parser.end();
